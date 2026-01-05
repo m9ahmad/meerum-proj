@@ -45,7 +45,7 @@ An AI-powered assistant that helps researchers, students, and educators quickly 
 
 ### 1. Clone the repo
 ```bash
-git clone https://github.com/amanrss/smart-assistant-genai.git
+git clone : github link
 cd smart-assistant-genai
 ```
 
