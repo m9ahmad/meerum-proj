@@ -3,6 +3,7 @@ from utils.summarizer import generate_summary
 from utils.qa import answer_question
 from utils.challenge import generate_challenges, evaluate_answer
 from utils.parser import parse_document
+from utils.recommender import recommend_papers
 
 st.set_page_config(page_title="Smart Research Assistant", layout="wide")
 st.title("📚 Smart Assistant for Research Summarization")
@@ -15,20 +16,26 @@ def reset_state():
         if key in st.session_state:
             del st.session_state[key]
 
-uploaded_file = st.file_uploader(
-    "Upload a research paper (PDF or TXT)",
+uploaded_files = st.file_uploader(
+    "Upload research papers (PDF or TXT)",
     type=["pdf", "txt"],
+    accept_multiple_files=True,
     on_change=reset_state
 )
 
-if uploaded_file:
+if uploaded_files:
     if "document_text" not in st.session_state:
-        with st.spinner("Reading and analyzing document..."):
-            st.session_state.document_text = parse_document(uploaded_file)
-        st.success("✅ Document uploaded and processed successfully.")
+        with st.spinner("Reading and analyzing documents..."):
+            full_text = []
+            for uploaded_file in uploaded_files:
+                # To read the file content, we need to pass the file object to the parser
+                # The parser is designed to handle the file object directly
+                full_text.append(parse_document(uploaded_file))
+            st.session_state.document_text = "\n\n---\n\n".join(full_text)
+        st.success("✅ Documents uploaded and processed successfully.")
 
     if "document_text" in st.session_state and st.session_state.document_text:
-        tabs = st.tabs(["📘 Summary", "❓ Ask Anything", "🧠 Challenge Me"])
+        tabs = st.tabs(["📘 Summary", "❓ Ask Anything", "🧠 Challenge Me", "🔗 Recommend Similar Papers"])
 
         # --- Tab 1: Summary ---
         with tabs[0]:
@@ -103,3 +110,20 @@ if uploaded_file:
 
                 if f"feedback_{i}" in st.session_state:
                     st.markdown(f"**Feedback:** {st.session_state[f'feedback_{i}']}")
+
+        # --- Tab 4: Recommend Similar Papers ---
+        with tabs[3]:
+            st.subheader("Discover Similar Research")
+            if st.button("Find Recommendations"):
+                with st.spinner("Searching for similar papers..."):
+                    # Use the beginning of the text as a query
+                    query_text = st.session_state.document_text[:500]
+                    recommendations = recommend_papers(query_text)
+                    st.session_state.recommendations = recommendations
+
+            if "recommendations" in st.session_state:
+                if st.session_state.recommendations:
+                    for paper in st.session_state.recommendations:
+                        st.markdown(f"- **[{paper['title']}]({paper['url']})** by {', '.join(paper['authors'])}")
+                else:
+                    st.warning("Could not find any recommendations.")
